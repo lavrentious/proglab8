@@ -12,6 +12,7 @@ import ru.lavrent.lab7.server.exceptions.BadRequest;
 import ru.lavrent.lab7.server.managers.AuthManager;
 import ru.lavrent.lab7.server.managers.RequestManager;
 import ru.lavrent.lab7.server.managers.RuntimeManager;
+import ru.lavrent.lab7.server.utils.Block;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -24,26 +25,154 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class TCPServer {
+  class ClientInfo {
+    private Credentials credentials;
+    private ClientHandler clientHandler;
+    private SocketChannel client;
+    private boolean responseReady;
+    private boolean readableHandled;
+    private boolean writableHandled;
+
+    public ClientInfo(Block<Response> block, SocketChannel client, Credentials credentials) {
+      this.credentials = credentials;
+      this.clientHandler = new ClientHandler(this);
+      this.client = client;
+      this.responseReady = false;
+      this.readableHandled = false;
+      this.writableHandled = false;
+    }
+
+    public ClientHandler getClientHandler() {
+      return clientHandler;
+    }
+
+    public Credentials getCredentials() {
+      return credentials;
+    }
+
+    public boolean getReadableHandled() {
+      return readableHandled;
+    }
+
+    public boolean getWritableHandled() {
+      return writableHandled;
+    }
+
+    public boolean getResponseReady() {
+      return responseReady;
+    }
+
+    public SocketChannel getClient() {
+      return client;
+    }
+
+    public void setClientHandler(ClientHandler clientHandler) {
+      this.clientHandler = clientHandler;
+    }
+
+    public void setCredentials(Credentials credentials) {
+      this.credentials = credentials;
+    }
+
+    public void setResponseReady(boolean responseReady) {
+      this.responseReady = responseReady;
+    }
+
+    public void setReadableHandled(boolean readableHandled) {
+      this.readableHandled = readableHandled;
+    }
+
+    public void setWritableHandled(boolean writableHandled) {
+      this.writableHandled = writableHandled;
+    }
+
+    public void setClient(SocketChannel client) {
+      this.client = client;
+    }
+  }
+
+  class ClientHandler {
+    private ClientInfo clientInfo;
+    private Block<Request> requestBlock;
+    private Block<Response> responseBlock;
+
+    public ClientHandler(ClientInfo clientInfo) {
+      this.clientInfo = clientInfo;
+      this.requestBlock = new Block<>();
+      this.responseBlock = new Block<>();
+    }
+
+    void readRequest() {
+      SocketChannel client = clientInfo.getClient();
+      try {
+        RuntimeManager.logger
+            .fine("%s is readable (%s)".formatted(client.toString(), Thread.currentThread().toString()));
+        int requestSize = TCPServer.this.readInt(client);
+        RuntimeManager.logger.fine("incoming %d bytes".formatted(requestSize));
+        if (requestSize == -1) {
+          disconnect(client);
+          return;
+        }
+        byte[] requestBytes = TCPServer.this.readRequest(client, requestSize);
+        Request request = SerializationUtils.deserialize(requestBytes);
+        RuntimeManager.logger.info(
+            "received %s request from %s (%d bytes)".formatted(request.getName(),
+                client.getRemoteAddress(),
+                requestSize));
+        this.requestBlock.put(request);
+      } catch (IOException e) {
+        disconnect(client);
+      }
+    }
+
+    void generateResponse() {
+      Request request = this.requestBlock.get(); // wait for the request
+      try {
+        Response response = TCPServer.this.generateResponse(request, clientInfo);
+        this.responseBlock.put(response);
+        RuntimeManager.logger.fine("response ready " + response.toString());
+        this.clientInfo.setResponseReady(true);
+      } catch (IOException e) {
+        disconnect(clientInfo.getClient());
+      }
+    }
+
+    void sendResponse() {
+      RuntimeManager.logger.fine("waiting for response block");
+      Response response = this.responseBlock.get();
+      RuntimeManager.logger.fine("got response block");
+      try {
+        TCPServer.this.sendResponse(clientInfo.getClient(), response);
+        RuntimeManager.logger.fine("sent response, not ready " + response.toString());
+        this.clientInfo.setResponseReady(false);
+      } catch (IOException e) {
+        disconnect(clientInfo.getClient());
+      }
+    }
+  }
+
   private final RequestManager requestManager;
   private final AuthManager authManager;
   private final Selector selector;
-  private Map<SocketChannel, Response> channelDataMap;
-  private Map<SocketChannel, Credentials> authorizedClients;
+  private Map<SocketChannel, ClientInfo> channelDataMap;
   private final ByteBuffer intBuffer;
+  private ExecutorService responseSendThreadPool;
 
   public TCPServer(int port, RequestManager requestManager, AuthManager authManager) throws IOException {
     this.requestManager = requestManager;
     this.authManager = authManager;
     this.channelDataMap = new HashMap<>();
-    this.authorizedClients = new HashMap<>();
     this.intBuffer = ByteBuffer.allocate(Integer.BYTES);
     ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
     serverSocketChannel.bind(new InetSocketAddress(port));
     serverSocketChannel.configureBlocking(false);
     selector = Selector.open();
     serverSocketChannel.register(selector, SelectionKey.OP_ACCEPT);
+    this.responseSendThreadPool = Executors.newFixedThreadPool(5);
   }
 
   public void listen() throws IOException {
@@ -69,6 +198,7 @@ public class TCPServer {
 
   private void disconnect(SocketChannel client) {
     try {
+      this.channelDataMap.remove(client);
       RuntimeManager.logger.info("%s disconnected".formatted(client.getRemoteAddress()));
       client.close();
     } catch (IOException e) {
@@ -80,61 +210,64 @@ public class TCPServer {
     SocketChannel client = serverSocketChannel.accept();
     client.configureBlocking(false);
     client.register(selector, SelectionKey.OP_READ + SelectionKey.OP_WRITE);
+    this.channelDataMap.put(client, new ClientInfo(new Block<>(), client, null));
     RuntimeManager.logger.info("%s connected".formatted(client.getRemoteAddress()));
   }
 
   private void handleWritable(SelectionKey key) throws IOException {
     SocketChannel client = (SocketChannel) key.channel();
-    Response response = channelDataMap.get(client);
-    if (response == null) {
+    ClientInfo clientInfo = this.channelDataMap.get(client);
+    if (!clientInfo.getResponseReady() || clientInfo.getWritableHandled()) {
       return;
     }
-    RuntimeManager.logger.fine("writing %s to %s".formatted(response.getName(), client.toString()));
-    sendResponse(client, response);
-    channelDataMap.remove(client);
+    RuntimeManager.logger.fine("creating new thread for %s for writable".formatted(client.toString()));
+    this.responseSendThreadPool.submit(
+        () -> {
+          clientInfo.getClientHandler().sendResponse();
+          clientInfo.setReadableHandled(false);
+          clientInfo.setWritableHandled(false);
+        });
+    clientInfo.setWritableHandled(true);
+    // TODO: fixed thread pool
   }
 
-  private void handleReadable(SelectionKey key) throws IOException {
+  private void handleReadable(SelectionKey key) {
     SocketChannel client = (SocketChannel) key.channel();
-    RuntimeManager.logger.fine("%s is readable".formatted(client.toString()));
-    int requestSize = this.readInt(client);
-    RuntimeManager.logger.fine("incoming %d bytes".formatted(requestSize));
-    if (requestSize == -1) {
-      disconnect(client);
+    ClientInfo clientInfo = this.channelDataMap.get(client);
+    if (clientInfo == null || clientInfo.getReadableHandled()) {
       return;
     }
-    byte[] requestBytes = this.readRequest(client, requestSize);
-    Request request = SerializationUtils.deserialize(requestBytes);
-    RuntimeManager.logger.info(
-        "received %s request from %s (%d bytes)".formatted(request.getName(), client.getRemoteAddress(), requestSize));
-
-    try {
-      this.channelDataMap.put(client, generateResponse(request, client));
-    } catch (IOException e) {
-      disconnect(client);
-    }
+    RuntimeManager.logger.fine("creating new thread for %s for readable (read)".formatted(client.toString()));
+    new Thread(() -> {
+      clientInfo.getClientHandler().readRequest();
+    }).start();
+    RuntimeManager.logger
+        .fine("creating new thread for %s for readable (generate response)".formatted(client.toString()));
+    new Thread(() -> {
+      clientInfo.getClientHandler().generateResponse();
+    }).start();
+    clientInfo.setReadableHandled(true);
   }
 
-  private Response generateResponse(Request request, SocketChannel client) throws IOException {
-    boolean authorized = authorizedClients.containsKey(client);
+  private Response generateResponse(Request request, ClientInfo clientInfo)
+      throws IOException {
     if (request instanceof AuthRequest) {
       Credentials credentials = ((AuthRequest) request).credentials;
       boolean authResult = authManager.auth(credentials);
       if (authResult) {
-        authorizedClients.put(client, credentials);
+        clientInfo.setCredentials(credentials);
         return new OkResponse();
       } else {
-        authorizedClients.remove(client);
+        clientInfo.setCredentials(null);
         return new ErrorResponse("auth failed");
       }
-    } else if (!(request instanceof RegisterRequest) && !authorized) {
+    } else if (!(request instanceof RegisterRequest) && clientInfo.getCredentials() == null) {
       return new ErrorResponse("unauthorized");
     }
     try {
-      Credentials credentials = authorizedClients.get(client);
-      if (credentials != null) {
-        request.setUser(authManager.getUserByUsername(credentials.username).toUser());
-        authorizedClients.remove(client);
+      if (clientInfo.getCredentials() != null) {
+        request.setUser(authManager.getUserByUsername(clientInfo.getCredentials().username).toUser());
+        clientInfo.setCredentials(null);
       }
       return requestManager.handleRequest(request);
     } catch (BadRequest e) {

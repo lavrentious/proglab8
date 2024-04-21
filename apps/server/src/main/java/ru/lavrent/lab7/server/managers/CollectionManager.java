@@ -56,7 +56,7 @@ public class CollectionManager {
     updatedAt = LocalDateTime.now();
   }
 
-  public LabWork add(DryLabWork labWork, User user) {
+  synchronized public LabWork add(DryLabWork labWork, User user) {
     var db = sessionFactory.openSession();
     db.beginTransaction();
     UserDao author = AuthManager.getUserByUsername(user.getUsername(), db);
@@ -105,7 +105,7 @@ public class CollectionManager {
     return new ArrayList<>(collection);
   }
 
-  public boolean updateById(long id, LabWork newLabWork) {
+  synchronized public boolean updateById(long id, LabWork newLabWork) {
     for (LabWork labWork : collection) {
       if (labWork.getId() == id) {
         collection.remove(labWork);
@@ -113,11 +113,11 @@ public class CollectionManager {
         setUpdatedAt();
         return true;
       }
-    }
+    } // TODO: db
     return false;
   }
 
-  public void clear(User user) {
+  synchronized public void clear(User user) {
     var db = sessionFactory.openSession();
     UserDao userDao = AuthManager.getUserByUsername(user.getUsername(), db);
     CriteriaBuilder criteriaBuilder = db.getCriteriaBuilder();
