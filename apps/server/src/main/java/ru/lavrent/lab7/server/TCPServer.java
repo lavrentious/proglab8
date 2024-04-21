@@ -22,6 +22,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
@@ -36,6 +37,7 @@ public class TCPServer {
     private boolean responseReady;
     private boolean readableHandled;
     private boolean writableHandled;
+    private Set<Thread> threads;
 
     public ClientInfo(Block<Response> block, SocketChannel client, Credentials credentials) {
       this.credentials = credentials;
@@ -44,6 +46,21 @@ public class TCPServer {
       this.responseReady = false;
       this.readableHandled = false;
       this.writableHandled = false;
+      this.threads = new HashSet<>();
+    }
+
+    public void addThread(Thread thread) {
+      this.threads.add(thread);
+    }
+
+    public void removeThread(Thread thread) {
+      this.threads.remove(thread);
+    }
+
+    public void stopAllThreads() {
+      for (Thread thread : threads) {
+        thread.interrupt();
+      }
     }
 
     public ClientHandler getClientHandler() {
@@ -197,7 +214,14 @@ public class TCPServer {
   }
 
   private void disconnect(SocketChannel client) {
+    if (client == null) {
+      return;
+    }
     try {
+      ClientInfo clientInfo = this.channelDataMap.get(client);
+      if (clientInfo != null) {
+        clientInfo.stopAllThreads();
+      }
       this.channelDataMap.remove(client);
       RuntimeManager.logger.info("%s disconnected".formatted(client.getRemoteAddress()));
       client.close();
@@ -228,7 +252,6 @@ public class TCPServer {
           clientInfo.setWritableHandled(false);
         });
     clientInfo.setWritableHandled(true);
-    // TODO: fixed thread pool
   }
 
   private void handleReadable(SelectionKey key) {
@@ -238,14 +261,20 @@ public class TCPServer {
       return;
     }
     RuntimeManager.logger.fine("creating new thread for %s for readable (read)".formatted(client.toString()));
-    new Thread(() -> {
+    Thread readRequestThread = new Thread(() -> {
       clientInfo.getClientHandler().readRequest();
-    }).start();
+      clientInfo.removeThread(Thread.currentThread());
+    });
+    clientInfo.addThread(readRequestThread);
+    readRequestThread.start();
     RuntimeManager.logger
         .fine("creating new thread for %s for readable (generate response)".formatted(client.toString()));
-    new Thread(() -> {
+    Thread generateResponsThread = new Thread(() -> {
       clientInfo.getClientHandler().generateResponse();
-    }).start();
+      clientInfo.removeThread(Thread.currentThread());
+    });
+    clientInfo.addThread(generateResponsThread);
+    generateResponsThread.start();
     clientInfo.setReadableHandled(true);
   }
 
