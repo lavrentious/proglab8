@@ -19,7 +19,7 @@ public class ExecuteScript extends Command {
   public void execute(String[] args) throws IOException {
     try {
       final String filePath = CommandManager.ArgsUtils.getIth(args, 0);
-      RuntimeManager runtimeManager = new RuntimeManager(tcpClient, filePath, tcpClient.getCredentials());
+      RuntimeManager runtimeManager = new RuntimeManager(tcpClient, filePath);
       runtimeManager.getReader().read();
     } catch (IllegalArgumentException e) {
       System.err.println("argument error: " + e.getMessage());

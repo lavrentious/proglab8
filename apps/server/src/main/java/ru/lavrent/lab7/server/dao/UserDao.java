@@ -7,6 +7,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import ru.lavrent.lab7.common.models.User;
+import ru.lavrent.lab7.common.utils.PublicUser;
 
 @Entity
 @Table(name = "users")
@@ -31,6 +32,10 @@ public class UserDao {
 
   public User toUser() {
     return new User(username, password);
+  }
+
+  public PublicUser toPublicUser() {
+    return new PublicUser(id, username);
   }
 
   public Long getId() {

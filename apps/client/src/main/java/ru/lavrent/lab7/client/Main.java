@@ -10,7 +10,7 @@ public class Main {
   public static void main(String[] args) {
     try {
       RuntimeManager runtimeManager = new RuntimeManager(
-          new TCPClient("localhost", ClientEnvConfig.getInstance().getPort()), null, null);
+          new TCPClient("localhost", ClientEnvConfig.getInstance().getPort()), null);
       runtimeManager.run();
     } catch (UnknownHostException e) {
       System.out.println("unknown host " + e.getMessage());

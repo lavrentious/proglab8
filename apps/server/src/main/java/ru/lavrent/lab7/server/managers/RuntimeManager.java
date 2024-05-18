@@ -7,7 +7,6 @@ import ru.lavrent.lab7.server.commands.Clear;
 import ru.lavrent.lab7.server.commands.Command;
 import ru.lavrent.lab7.server.commands.CountLessThanDifficulty;
 import ru.lavrent.lab7.server.commands.Info;
-import ru.lavrent.lab7.server.commands.Register;
 import ru.lavrent.lab7.server.commands.Show;
 import ru.lavrent.lab7.server.database.DBSessionManager;
 import ru.lavrent.lab7.server.utils.ServerEnvConfig;
@@ -95,7 +94,6 @@ public class RuntimeManager {
         new Show(this.collectionManager),
         new Info(this.collectionManager),
         new CountLessThanDifficulty(this.collectionManager),
-        new Register(authManager),
     };
     for (Command cmd : commands) {
       this.requestManager.addCommand(cmd);

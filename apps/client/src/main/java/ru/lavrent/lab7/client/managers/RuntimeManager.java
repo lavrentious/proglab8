@@ -30,9 +30,8 @@ public class RuntimeManager {
   private Reader reader;
   private TCPClient tcpClient;
   private ClientEnvConfig config;
-  private Credentials credentials;
 
-  public RuntimeManager(TCPClient tcpClient, String filePath, Credentials credentials)
+  public RuntimeManager(TCPClient tcpClient, String filePath)
       throws UnknownHostException, IOException {
     this.commandManager = new CommandManager();
     this.tcpClient = tcpClient;
@@ -88,11 +87,4 @@ public class RuntimeManager {
     return reader;
   }
 
-  public Credentials getCredentials() {
-    return credentials;
-  }
-
-  public void setCredentials(Credentials credentials) {
-    this.credentials = credentials;
-  }
 }

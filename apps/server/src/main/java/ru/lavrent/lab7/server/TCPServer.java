@@ -4,10 +4,11 @@ import org.apache.commons.lang3.SerializationUtils;
 import ru.lavrent.lab7.common.network.requests.AuthRequest;
 import ru.lavrent.lab7.common.network.requests.RegisterRequest;
 import ru.lavrent.lab7.common.network.requests.Request;
+import ru.lavrent.lab7.common.network.responses.AuthResponse;
 import ru.lavrent.lab7.common.network.responses.ErrorResponse;
-import ru.lavrent.lab7.common.network.responses.OkResponse;
 import ru.lavrent.lab7.common.network.responses.Response;
 import ru.lavrent.lab7.common.utils.Credentials;
+import ru.lavrent.lab7.common.utils.PublicUser;
 import ru.lavrent.lab7.server.exceptions.BadRequest;
 import ru.lavrent.lab7.server.managers.AuthManager;
 import ru.lavrent.lab7.server.managers.RequestManager;
@@ -280,17 +281,25 @@ public class TCPServer {
 
   private Response generateResponse(Request request, ClientInfo clientInfo)
       throws IOException {
-    if (request instanceof AuthRequest) {
-      Credentials credentials = ((AuthRequest) request).credentials;
-      boolean authResult = authManager.auth(credentials);
-      if (authResult) {
+    if (request instanceof AuthRequest || request instanceof RegisterRequest) {
+      Credentials credentials;
+      PublicUser authedUser;
+      if (request instanceof AuthRequest) {
+        credentials = ((AuthRequest) request).credentials;
+        authedUser = authManager.auth(credentials);
+      } else {
+        credentials = new Credentials(((RegisterRequest) request).user.getUsername(),
+            ((RegisterRequest) request).user.getPassword());
+        authedUser = authManager.register(((RegisterRequest) request).user);
+      }
+      if (authedUser != null) {
         clientInfo.setCredentials(credentials);
-        return new OkResponse();
+        return new AuthResponse(authedUser);
       } else {
         clientInfo.setCredentials(null);
         return new ErrorResponse("auth failed");
       }
-    } else if (!(request instanceof RegisterRequest) && clientInfo.getCredentials() == null) {
+    } else if (clientInfo.getCredentials() == null) {
       return new ErrorResponse("unauthorized");
     }
     try {

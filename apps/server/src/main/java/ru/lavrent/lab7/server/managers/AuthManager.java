@@ -11,6 +11,7 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.hibernate.query.Query;
 import ru.lavrent.lab7.common.models.User;
 import ru.lavrent.lab7.common.utils.Credentials;
+import ru.lavrent.lab7.common.utils.PublicUser;
 import ru.lavrent.lab7.server.dao.UserDao;
 import ru.lavrent.lab7.server.exceptions.BadRequest;
 
@@ -24,34 +25,39 @@ public class AuthManager {
     this.sessionFactory = sessionFactory;
   }
 
-  public void register(User user) {
+  public PublicUser register(User user) {
     var db = sessionFactory.openSession();
+    PublicUser res = null;
     try {
       db.beginTransaction();
       UserDao dao = new UserDao(new User(user.getUsername(), md2(user.getPassword())));
       db.persist(dao);
       db.getTransaction().commit();
+      res = dao.toPublicUser();
     } catch (ConstraintViolationException e) {
       db.getTransaction().rollback();
       throw new BadRequest(e.getMessage());
     }
     db.close();
+    return res;
   }
 
-  public boolean auth(Credentials credentials) {
+  public PublicUser auth(Credentials credentials) {
     if (credentials == null) {
-      return false;
+      return null;
     }
     Session db = sessionFactory.openSession();
     UserDao user = this.getUserByUsername(credentials.username);
     db.close();
     if (user == null) {
-      return false;
+      return null;
     }
     String hashedPassword = this.md2(credentials.password);
-    return user.toUser().getPassword().equals(hashedPassword);
+    if (user.toUser().getPassword().equals(hashedPassword)) {
+      return new PublicUser(user.getId(), user.getUsername());
+    }
+    return null;
   }
-
 
   public UserDao getUserByUsername(String username) {
     Session db = sessionFactory.openSession();

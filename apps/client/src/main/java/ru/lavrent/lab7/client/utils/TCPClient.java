@@ -22,7 +22,6 @@ import java.util.function.Consumer;
 
 public class TCPClient {
   private final int RESPONSE_BUFFER_SIZE = 16;
-  private Credentials credentials;
   private Socket socket;
   private OutputStream out;
   private InputStream in;
@@ -92,7 +91,7 @@ public class TCPClient {
   public Response send(Request request) throws IOException {
     if (!(request instanceof AuthRequest) && !(request instanceof RegisterRequest)) {
       try {
-        this.sendRequest(new AuthRequest(credentials));
+        this.sendRequest(new AuthRequest(GlobalStorage.getInstance().getCredentials()));
         System.out.println("[DEBUG] auth ok");
       } catch (AuthException e) {
         System.out.println("[DEBUG] auth failed: " + e.getMessage());
@@ -119,7 +118,7 @@ public class TCPClient {
       Response response = SerializationUtils.deserialize(responseBytes);
       if (response instanceof ErrorResponse) {
         ErrorResponse r = (ErrorResponse) response;
-        if (request instanceof AuthRequest)
+        if (request instanceof AuthRequest || request instanceof RegisterRequest)
           throw new AuthException(r.message);
         throw new RequestFailedException(r.message);
       }
@@ -163,20 +162,21 @@ public class TCPClient {
   }
 
   public Credentials getCredentials() {
-    return credentials;
+    return GlobalStorage.getInstance().getCredentials();
   }
 
   public void deauth() {
     if (onDeauth != null) {
-      onDeauth.accept(credentials);
+      onDeauth.accept(this.getCredentials());
     }
     setCredentials(null);
+    GlobalStorage.getInstance().setUser(null);
   }
 
   public void setCredentials(Credentials credentials) {
     if (onAuth != null && credentials != null) {
       onAuth.accept(credentials);
     }
-    this.credentials = credentials;
+    GlobalStorage.getInstance().setCredentials(credentials);
   }
 }
