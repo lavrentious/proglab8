@@ -18,7 +18,6 @@ public class Block<T> {
       try {
         wait();
       } catch (InterruptedException e) {
-        e.printStackTrace();
       }
     this.value = value;
     this.ready = true;
@@ -30,7 +29,6 @@ public class Block<T> {
       try {
         wait();
       } catch (InterruptedException e) {
-        e.printStackTrace();
       }
     this.ready = false;
     notifyAll();
