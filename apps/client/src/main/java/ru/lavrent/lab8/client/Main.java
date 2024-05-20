@@ -10,6 +10,7 @@ import ru.lavrent.lab8.client.utils.ClientEnvConfig;
 import ru.lavrent.lab8.client.utils.GlobalExceptionHandler;
 import ru.lavrent.lab8.client.utils.GlobalStorage;
 import ru.lavrent.lab8.client.utils.TCPClient;
+import ru.lavrent.lab8.common.exceptions.InvalidConfigException;
 import ru.lavrent.lab8.common.utils.Block;
 
 import java.io.IOException;
@@ -40,7 +41,6 @@ public class Main extends Application {
     Block<RuntimeManager> block = new Block<>();
     new Thread(() -> {
       launch(args);
-      System.exit(0);
     }).start();
     try {
       System.out.println("starting net module");
@@ -49,9 +49,12 @@ public class Main extends Application {
       block.put(runtimeManager);
       runtimeManager.run();
     } catch (UnknownHostException e) {
-      System.out.println("unknown host " + e.getMessage());
-    } catch (Exception e) {
-      System.out.println("error while connecting " + e.getMessage());
+      GlobalExceptionHandler.showErrorAlert("UnknownHostException", e.getMessage());
+    } catch (IOException e) {
+      GlobalExceptionHandler.showErrorAlert("IOException", e.getMessage());
+    } catch (InvalidConfigException e) {
+      System.out.println(e.toString());
+      System.exit(1);
     }
   }
 
@@ -60,5 +63,11 @@ public class Main extends Application {
     // Image(Objects.requirActionEvent
     // eventNull(getClass().getResourceAsStream("/icons/app.png")));
     // this.mainStage.getIcons().add(icon);
+  }
+
+  public void stop() {
+    System.out.println("quitting...");
+    GlobalStorage.getInstance().getTCPClient().disconnect();
+    System.exit(0);
   }
 }
