@@ -30,6 +30,7 @@ import ru.lavrent.lab8.client.utils.GlobalStorage;
 import ru.lavrent.lab8.client.utils.L10nService;
 import ru.lavrent.lab8.common.models.LabWork;
 
+import java.util.Date;
 import java.util.ResourceBundle;
 
 public class HomeController {
@@ -117,6 +118,9 @@ public class HomeController {
   private TableColumn<LabWork, String> difficultyCol;
 
   @FXML
+  private TableColumn<LabWork, String> createdAtColumn;
+
+  @FXML
   private TableColumn<LabWork, Integer> disciplineLabsCountCol;
 
   @FXML
@@ -197,6 +201,9 @@ public class HomeController {
     coordinatesYCol
         .setCellValueFactory(e -> new SimpleIntegerProperty(e.getValue().getCoordinates().getY()).asObject());
     difficultyCol.setCellValueFactory(e -> new SimpleStringProperty(e.getValue().getDifficulty().name()));
+    createdAtColumn.setCellValueFactory(
+        e -> new SimpleStringProperty(
+            L10nService.getInstance().getDate(Date.from(e.getValue().getCreationDate().toInstant()))));
     disciplineLabsCountCol
         .setCellValueFactory(e -> new SimpleIntegerProperty(e.getValue().getDiscipline().getLabsCount()).asObject());
     disciplinePracticeHoursCol
@@ -270,6 +277,9 @@ public class HomeController {
   private void applyLocale(ResourceBundle bundle) {
     this.createButton.setText(L10nService.getInstance().getString("CreateButton"));
     this.deleteButton.setText(L10nService.getInstance().getString("DeleteButton"));
+    this.editButton.setText(L10nService.getInstance().getString("EditButton"));
+    this.logoutButton.setText(L10nService.getInstance().getString("LogoutButton"));
+    this.refetchButton.setText(L10nService.getInstance().getString("RefetchButton"));
     this.settingsButton.setText(L10nService.getInstance().getString("Settings"));
     this.tableTab.setText(L10nService.getInstance().getString("TableTab"));
     this.visualizeTab.setText(L10nService.getInstance().getString("VisualizeTab"));
@@ -284,5 +294,12 @@ public class HomeController {
     this.disciplinePracticeHoursCol.setText(L10nService.getInstance().getString("DisciplinePracticeHoursCol"));
     this.minimalPointCol.setText(L10nService.getInstance().getString("MinimalPointCol"));
     this.nameCol.setText(L10nService.getInstance().getString("NameCol"));
+
+    Platform.runLater(() -> {
+      this.createdAtColumn.setCellValueFactory(
+          e -> new SimpleStringProperty(
+              L10nService.getInstance().getDate(Date.from(e.getValue().getCreationDate().toInstant()))));
+      this.refetchLabworks();
+    });
   }
 }

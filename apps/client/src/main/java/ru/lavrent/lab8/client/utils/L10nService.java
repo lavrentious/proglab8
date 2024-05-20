@@ -2,6 +2,11 @@ package ru.lavrent.lab8.client.utils;
 
 import javafx.beans.property.SimpleObjectProperty;
 
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -70,5 +75,11 @@ public class L10nService {
       System.out.println("missing resource: " + key);
       return "#" + key + "#";
     }
+  }
+
+  public String getDate(Date date) {
+    LocalDate localDate = LocalDate.ofInstant(date.toInstant(), ZoneId.systemDefault());
+    DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT).withLocale(this.locale.get());
+    return localDate.format(formatter);
   }
 }

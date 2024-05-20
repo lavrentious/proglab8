@@ -44,6 +44,7 @@
                                     <TableView fx:id="dataTable" minHeight="-Infinity" minWidth="-Infinity">
                                       <columns>
                                           <TableColumn fx:id="idCol" prefWidth="75.0" text="id" />
+                                          <TableColumn fx:id="createdAtColumn" prefWidth="75.0" text="created at" />
                                           <TableColumn fx:id="authorIdCol" prefWidth="75.0" text="creator id" />
                                         <TableColumn fx:id="nameCol" prefWidth="75.0" text="name" />
                                         <TableColumn fx:id="coordinatesXCol" prefWidth="75.0" text="x" />
