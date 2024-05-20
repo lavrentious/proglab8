@@ -242,7 +242,7 @@ public class TCPServer {
   private void handleWritable(SelectionKey key) throws IOException {
     SocketChannel client = (SocketChannel) key.channel();
     ClientInfo clientInfo = this.channelDataMap.get(client);
-    if (!clientInfo.getResponseReady() || clientInfo.getWritableHandled()) {
+    if (clientInfo == null || !clientInfo.getResponseReady() || clientInfo.getWritableHandled()) {
       return;
     }
     RuntimeManager.logger.fine("creating new thread for %s for writable".formatted(client.toString()));
