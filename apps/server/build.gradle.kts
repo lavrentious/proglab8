@@ -1,4 +1,4 @@
-val MAIN_CLASS = "ru.lavrent.lab7.server.Main"
+val MAIN_CLASS = "ru.lavrent.lab8.server.Main"
 
 plugins {
     application
@@ -35,7 +35,7 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.shadowJar {
-    archiveBaseName.set("lab7Server")
+    archiveBaseName.set("lab8Server")
     archiveClassifier.set("")
     minimize {
         exclude(dependency("org.hibernate.orm:.*:.*"))

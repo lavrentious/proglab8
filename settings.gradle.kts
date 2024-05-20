@@ -3,5 +3,5 @@ plugins {
     id("org.gradle.toolchains.foojay-resolver-convention") version "0.4.0"
 }
 
-rootProject.name = "proglab7"
+rootProject.name = "proglab8"
 include("apps:client", "apps:server", "apps:common")

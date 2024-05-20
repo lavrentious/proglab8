@@ -1,9 +1,16 @@
-val MAIN_CLASS = "ru.lavrent.lab7.client.Main"
+val MAIN_CLASS = "ru.lavrent.lab8.client.Main"
 
 plugins {
     application
     id("com.github.johnrengelman.shadow") version "8.1.1"
     java
+    id("org.openjfx.javafxplugin") version "0.1.0"
+}
+
+
+javafx {
+    modules("javafx.base", "javafx.controls", "javafx.fxml")
+    version = "21"
 }
 
 repositories {
@@ -31,9 +38,11 @@ tasks.named<JavaExec>("run") {
 }
 
 tasks.shadowJar {
-    archiveBaseName.set("lab7Client")
+    archiveBaseName.set("lab8Client")
     archiveClassifier.set("")
-    minimize()
+    minimize {
+        exclude(dependency("org.openjfx:.*:.*"))
+    }
 }
 
 tasks.jar {

@@ -2,7 +2,7 @@ plugins {
     java
 }
 
-group = "ru.lavrent.lab7"
+group = "ru.lavrent.lab8"
 
 repositories {
     gradlePluginPortal()
