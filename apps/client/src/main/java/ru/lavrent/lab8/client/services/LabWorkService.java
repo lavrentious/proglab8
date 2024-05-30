@@ -28,37 +28,28 @@ public class LabWorkService {
 
   public void fetch() {
     TCPClient tcpClient = GlobalStorage.getInstance().getTCPClient();
-    try {
-      ShowResponse res = (ShowResponse) tcpClient.send(new BlankRequest(Commands.SHOW));
-      var fetched = res.list;
-      HashMap<Long, LabWork> fetchedMap = new HashMap<>();
-      for (LabWork lw : fetched) {
-        fetchedMap.put(lw.getId(), lw);
-      }
-
-      for (LabWork lw : fetched) {
-        if (!GlobalStorage.getInstance().getLabWorks().containsKey(lw.getId())) {
-          GlobalStorage.getInstance().addLabWork(lw);
+    Platform.runLater(() -> {
+      try {
+        ShowResponse res = (ShowResponse) tcpClient.send(new BlankRequest(Commands.SHOW));
+        var fetched = res.list;
+        HashMap<Long, LabWork> fetchedMap = new HashMap<>();
+        for (LabWork lw : fetched) {
+          fetchedMap.put(lw.getId(), lw);
         }
-      }
-      for (LabWork lw : GlobalStorage.getInstance().getLabWorks().values()) {
-        if (!fetchedMap.containsKey(lw.getId())) {
-          GlobalStorage.getInstance().removeLabWork(lw.getId());
-        }
-      }
 
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
+        GlobalStorage.getInstance().setLabWorks(fetchedMap);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    });
+
   }
 
   public LabWork create(DryLabWork lw) {
     TCPClient tcpClient = GlobalStorage.getInstance().getTCPClient();
     try {
       var res = (AddResponse) tcpClient.send(new AddRequest(lw));
-      Platform.runLater(() -> {
-        GlobalStorage.getInstance().addLabWork(res.labWork);
-      });
+      GlobalStorage.getInstance().addLabWork(res.labWork);
       return res.labWork;
     } catch (IOException e) {
       throw new RuntimeException(e);

@@ -3,6 +3,8 @@ package ru.lavrent.lab8.common.models;
 import ru.lavrent.lab8.common.exceptions.ValidationException;
 import ru.lavrent.lab8.common.utils.Entity;
 
+import java.util.Objects;
+
 public class Discipline extends Entity {
   private String name; // Поле не может быть null, Строка не может быть пустой
   private long lectureHours;
@@ -78,6 +80,11 @@ public class Discipline extends Entity {
         && lectureHours == that.lectureHours
         && practiceHours.equals(that.practiceHours)
         && labsCount.equals(that.labsCount);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(name, lectureHours, practiceHours, labsCount);
   }
 
 }

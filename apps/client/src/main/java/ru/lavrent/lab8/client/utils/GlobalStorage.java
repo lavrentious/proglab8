@@ -11,6 +11,8 @@ import ru.lavrent.lab8.common.models.LabWork;
 import ru.lavrent.lab8.common.utils.Credentials;
 import ru.lavrent.lab8.common.utils.PublicUser;
 
+import java.util.Map;
+
 public class GlobalStorage {
   static private GlobalStorage instance;
   private SimpleObjectProperty<Credentials> credentials = new SimpleObjectProperty<>();
@@ -64,15 +66,35 @@ public class GlobalStorage {
 
   public synchronized void addLabWork(LabWork labWork) {
     Platform.runLater(() -> {
+      System.out.println("[service] adding " + labWork.getId());
       this.labWorks.put(labWork.getId(), labWork);
+      this.labWorkList.add(labWork);
+    });
+  }
+
+  public synchronized void updateLabWork(long id, LabWork labWork) {
+    Platform.runLater(() -> {
+      System.out.println("[service] updating " + id);
+      this.labWorks.put(id, labWork);
+      this.labWorks.remove(id);
       this.labWorkList.add(labWork);
     });
   }
 
   public synchronized void removeLabWork(long id) {
     Platform.runLater(() -> {
+      System.out.println("[service] removing " + id);
       this.labWorkList.remove(this.labWorks.get(id));
       this.labWorks.remove(id);
+    });
+  }
+
+  public synchronized void setLabWorks(Map<Long, LabWork> newLabworks) {
+    Platform.runLater(() -> {
+      this.labWorks.clear();
+      this.labWorks.putAll(newLabworks);
+      this.labWorkList.clear();
+      this.labWorkList.addAll(newLabworks.values());
     });
   }
 

@@ -3,6 +3,7 @@ package ru.lavrent.lab8.common.models;
 import ru.lavrent.lab8.common.exceptions.ValidationException;
 
 import java.time.ZonedDateTime;
+import java.util.Objects;
 
 public class LabWork extends DryLabWork implements Comparable<LabWork> {
   private Long id; // Поле не может быть null, Значение поля должно быть больше 0, Значение этого
@@ -80,10 +81,15 @@ public class LabWork extends DryLabWork implements Comparable<LabWork> {
       return false;
     }
     LabWork that = (LabWork) obj;
-    return id.equals(that.getId()) && authorId == that.getAuthorId() && creationDate.equals(that.getCreationDate())
+    return id.equals(that.getId()) && authorId == that.getAuthorId() && name.equals(that.getName())
+        && creationDate.equals(that.getCreationDate())
         && difficulty.equals(that.getDifficulty()) && coordinates.equals(that.getCoordinates())
         && discipline.equals(that.getDiscipline()) && minimalPoint.equals(that.getMinimalPoint())
         && minimalPoint.equals(that.getMinimalPoint());
   }
 
+  @Override
+  public int hashCode() {
+    return Objects.hash(id, authorId, creationDate, difficulty, coordinates, discipline, minimalPoint);
+  }
 }

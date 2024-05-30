@@ -3,6 +3,8 @@ package ru.lavrent.lab8.common.models;
 import ru.lavrent.lab8.common.exceptions.ValidationException;
 import ru.lavrent.lab8.common.utils.Entity;
 
+import java.util.Objects;
+
 public class Coordinates extends Entity {
   private Long x; // Поле не может быть null
   private Integer y; // Значение поля должно быть больше -498, Поле не может быть null
@@ -52,5 +54,10 @@ public class Coordinates extends Entity {
     }
     Coordinates that = (Coordinates) obj;
     return x.equals(that.x) && y.equals(that.y);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(x, y);
   }
 }
