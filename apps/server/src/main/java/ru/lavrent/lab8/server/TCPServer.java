@@ -281,28 +281,28 @@ public class TCPServer {
 
   private Response generateResponse(Request request, ClientInfo clientInfo)
       throws IOException {
-    if (request instanceof AuthRequest || request instanceof RegisterRequest) {
-      Credentials credentials;
-      PublicUser authedUser;
-      if (request instanceof AuthRequest) {
-        credentials = ((AuthRequest) request).credentials;
-        authedUser = authManager.auth(credentials);
-      } else {
-        credentials = new Credentials(((RegisterRequest) request).user.getUsername(),
-            ((RegisterRequest) request).user.getPassword());
-        authedUser = authManager.register(((RegisterRequest) request).user);
-      }
-      if (authedUser != null) {
-        clientInfo.setCredentials(credentials);
-        return new AuthResponse(authedUser);
-      } else {
-        clientInfo.setCredentials(null);
-        return new ErrorResponse("auth failed");
-      }
-    } else if (clientInfo.getCredentials() == null) {
-      return new ErrorResponse("unauthorized");
-    }
     try {
+      if (request instanceof AuthRequest || request instanceof RegisterRequest) {
+        Credentials credentials;
+        PublicUser authedUser;
+        if (request instanceof AuthRequest) {
+          credentials = ((AuthRequest) request).credentials;
+          authedUser = authManager.auth(credentials);
+        } else {
+          credentials = new Credentials(((RegisterRequest) request).user.getUsername(),
+              ((RegisterRequest) request).user.getPassword());
+          authedUser = authManager.register(((RegisterRequest) request).user);
+        }
+        if (authedUser != null) {
+          clientInfo.setCredentials(credentials);
+          return new AuthResponse(authedUser);
+        } else {
+          clientInfo.setCredentials(null);
+          throw new BadRequest("auth failed");
+        }
+      } else if (clientInfo.getCredentials() == null) {
+        throw new BadRequest("unauthorized");
+      }
       if (clientInfo.getCredentials() != null) {
         request.setUser(authManager.getUserByUsername(clientInfo.getCredentials().username).toPublicUser());
         clientInfo.setCredentials(null);

@@ -21,6 +21,7 @@ import ru.lavrent.lab8.client.utils.GlobalStorage;
 import ru.lavrent.lab8.client.utils.L10nService;
 import ru.lavrent.lab8.common.exceptions.AuthException;
 import ru.lavrent.lab8.common.utils.Credentials;
+import ru.lavrent.lab8.common.utils.PublicUser;
 
 import java.util.ResourceBundle;
 
@@ -92,10 +93,38 @@ public class LoginController {
 
   @FXML
   public void onRegister() {
-    System.out.println("registering");
-    System.out.println(usernameField.getText());
-    System.out.println(passwordField.getText());
-    HomeController.launch();
+    Task<Void> register = new Task<Void>() {
+      @Override
+      protected Void call() throws Exception {
+        isLoading.set(true);
+        Credentials credentials = new Credentials(usernameField.getText(), passwordField.getText());
+        PublicUser user = AuthService.getInstance().register(credentials);
+        System.out.println("registerr success " + user);
+        GlobalStorage.getInstance().setCredentials(credentials);
+        GlobalStorage.getInstance().setUser(user);
+        return null;
+      }
+    };
+
+    register.setOnSucceeded((WorkerStateEvent event) -> {
+      isLoading.set(false);
+      HomeController.launch();
+    });
+
+    register.setOnFailed((WorkerStateEvent event) -> {
+      isLoading.set(false);
+      Throwable exception = event.getSource().getException();
+      if (exception instanceof AuthException) {
+        this.showAuthenticationError(exception.getMessage());
+        System.out.println("register failed: " + exception.getMessage());
+      } else {
+        System.out.println("unknown error " + exception);
+      }
+    });
+
+    Thread thread = new Thread(register);
+    thread.setDaemon(true);
+    thread.start();
   }
 
   @FXML

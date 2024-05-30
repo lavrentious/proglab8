@@ -50,11 +50,11 @@ public class AuthService {
     }
   }
 
-  public PublicUser register() {
+  public PublicUser register(Credentials credentials) {
     TCPClient tcpClient = GlobalStorage.getInstance().getTCPClient();
     try {
       var res = (AuthResponse) tcpClient
-          .send(new RegisterRequest(new User(this.getCredentials().username, this.getCredentials().password)));
+          .send(new RegisterRequest(new User(credentials.username, credentials.password)));
       return res.user;
     } catch (IOException e) {
       throw new AuthException(e);
