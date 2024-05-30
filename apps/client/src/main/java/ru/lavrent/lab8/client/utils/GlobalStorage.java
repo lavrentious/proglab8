@@ -1,11 +1,13 @@
 package ru.lavrent.lab8.client.utils;
 
+import com.google.common.base.Predicate;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleListProperty;
 import javafx.beans.property.SimpleMapProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.collections.transformation.FilteredList;
 import javafx.stage.Stage;
 import ru.lavrent.lab8.common.models.LabWork;
 import ru.lavrent.lab8.common.utils.Credentials;
@@ -21,9 +23,11 @@ public class GlobalStorage {
   private TCPClient tcpClient;
   private SimpleMapProperty<Long, LabWork> labWorks = new SimpleMapProperty<>(FXCollections.observableHashMap());
   private ObservableList<LabWork> labWorkList;
+  private FilteredList<LabWork> filteredList;
 
   private GlobalStorage() {
     this.labWorkList = new SimpleListProperty<>(FXCollections.observableArrayList(this.labWorks.get().values()));
+    this.filteredList = new FilteredList<>(this.labWorkList);
   }
 
   static public synchronized GlobalStorage getInstance() {
@@ -31,6 +35,10 @@ public class GlobalStorage {
       instance = new GlobalStorage();
     }
     return instance;
+  }
+
+  public synchronized void setFiltersPredicate(Predicate<LabWork> predicate) {
+    this.filteredList.setPredicate(predicate);
   }
 
   public synchronized TCPClient getTCPClient() {
@@ -58,6 +66,10 @@ public class GlobalStorage {
 
   public synchronized ObservableList<LabWork> getObservableLabWorks() {
     return this.labWorkList;
+  }
+
+  public FilteredList<LabWork> getFilteredList() {
+    return filteredList;
   }
 
   public synchronized LabWork getLabWorkById(long id) {

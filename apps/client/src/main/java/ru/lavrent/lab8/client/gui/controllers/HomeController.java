@@ -85,6 +85,9 @@ public class HomeController {
   private Button refetchButton;
 
   @FXML
+  private Button filtersButton;
+
+  @FXML
   private Button settingsButton;
 
   @FXML
@@ -213,7 +216,8 @@ public class HomeController {
     disciplineNameCol.setCellValueFactory(e -> new SimpleStringProperty(e.getValue().getDiscipline().getName()));
     minimalPointCol.setCellValueFactory(e -> new SimpleLongProperty(e.getValue().getMinimalPoint()).asObject());
 
-    this.dataTable.setItems(GlobalStorage.getInstance().getObservableLabWorks());
+    // this.dataTable.setItems(GlobalStorage.getInstance().getObservableLabWorks());
+    this.dataTable.setItems(GlobalStorage.getInstance().getFilteredList());
 
     // initialize labwork fetch daemon
     this.labWorkFetcherService = new LabWorkFetcherService();
@@ -228,6 +232,11 @@ public class HomeController {
       GlobalStorage.getInstance().clearLabWorks();
       this.labWorkFetcherService.restart();
     });
+  }
+
+  @FXML
+  public void openFilterMenu() {
+    FiltersDialog.launch();
   }
 
   @FXML

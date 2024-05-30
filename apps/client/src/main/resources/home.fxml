@@ -28,13 +28,24 @@
                            <top>
                               <BorderPane prefWidth="200.0" BorderPane.alignment="CENTER">
                                  <top>
-                                    <ToolBar minHeight="-Infinity" minWidth="-Infinity" prefHeight="40.0" BorderPane.alignment="CENTER">
-                                      <items>
-                                          <Button fx:id="createButton" mnemonicParsing="false" onAction="#runCreateDialog" text="create" />
-                                          <Button fx:id="editButton" disable="true" mnemonicParsing="false" onAction="#runEditDialog" text="edit" />
-                                          <Button fx:id="deleteButton" disable="true" mnemonicParsing="false" onAction="#deleteLabwork" text="delete" />
-                                      </items>
-                                    </ToolBar>
+                                    <BorderPane BorderPane.alignment="CENTER">
+                                       <left>
+                                          <ToolBar minHeight="-Infinity" minWidth="-Infinity" prefHeight="40.0" BorderPane.alignment="CENTER">
+                                            <items>
+                                                <Button fx:id="createButton" mnemonicParsing="false" onAction="#runCreateDialog" text="create" />
+                                                <Button fx:id="editButton" disable="true" mnemonicParsing="false" onAction="#runEditDialog" text="edit" />
+                                                <Button fx:id="deleteButton" disable="true" mnemonicParsing="false" onAction="#deleteLabwork" text="delete" />
+                                            </items>
+                                          </ToolBar>
+                                       </left>
+                                       <right>
+                                          <HBox alignment="CENTER_RIGHT" BorderPane.alignment="CENTER">
+                                             <children>
+                                                <Button fx:id="filtersButton" mnemonicParsing="false" onAction="#openFilterMenu" text="filters" />
+                                             </children>
+                                          </HBox>
+                                       </right>
+                                    </BorderPane>
                                  </top>
                               </BorderPane>
                            </top>
