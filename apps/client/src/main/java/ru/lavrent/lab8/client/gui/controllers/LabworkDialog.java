@@ -17,6 +17,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
+import javafx.scene.control.TitledPane;
 import javafx.scene.layout.Region;
 import javafx.stage.Stage;
 import ru.lavrent.lab8.client.Main;
@@ -40,6 +41,15 @@ public class LabworkDialog {
 
   @FXML
   private ComboBox<String> difficultyComboBox;
+
+  @FXML
+  private TitledPane disciplineTabLabel;
+
+  @FXML
+  private TitledPane generalTabLabel;
+
+  @FXML
+  private TitledPane coordinatesTabLabel;
 
   @FXML
   private Label difficultylabel;
@@ -99,7 +109,11 @@ public class LabworkDialog {
 
   @FXML
   void initialize() {
-    System.out.println("initializing labwork dialog");
+    this.applyLocale();
+    L10nService.getInstance().getObservableLocale().addListener((observable, oldValue, newValue) -> {
+      this.applyLocale();
+    });
+
     List<String> difficultyKeys = Arrays.asList(Difficulty.values()).stream().map(e -> e.toString()).toList();
     this.difficultyComboBox.setItems(FXCollections.observableArrayList(difficultyKeys));
     this.difficultyComboBox.getSelectionModel().selectedItemProperty()
@@ -188,7 +202,6 @@ public class LabworkDialog {
   }
 
   static LabworkDialog launch(LabWork existingLabWork) {
-    System.out.println("loading labwork dialog");
     FXMLLoader loader = new FXMLLoader(SettingsDialog.class.getResource("/create.fxml"));
     Parent root = Main.loadFxml(loader);
 
@@ -199,7 +212,12 @@ public class LabworkDialog {
 
     Stage dialogStage = new Stage();
     dialogStage.setScene(new Scene(root));
-    dialogStage.setTitle(L10nService.getInstance().getString("CreateLabWork"));
+
+    L10nService l10nService = L10nService.getInstance();
+    dialogStage.setTitle(l10nService.getString("CreateLabWork"));
+    l10nService.getObservableLocale()
+        .addListener((observable, oldValue, newValue) -> dialogStage.setTitle(l10nService.getString("CreateLabWork")));
+
     dialogStage.show();
 
     return controller;
@@ -236,6 +254,27 @@ public class LabworkDialog {
       this.labworkNameField.setText("");
       this.disciplineNameField.setText("");
     }
+  }
+
+  private void applyLocale() {
+    L10nService l10n = L10nService.getInstance();
+    this.cancelButton.setText(l10n.getString("Cancel"));
+    this.submitButton.setText(l10n.getString("Save"));
+
+    this.generalTabLabel.setText(l10n.getString("GeneralTabLabel"));
+    this.labworkNameLabel.setText(l10n.getString("LabworkNameLabel"));
+    this.minimalPointLabel.setText(l10n.getString("MinimalPointLabel"));
+    this.difficultylabel.setText(l10n.getString("DifficultyLabel"));
+
+    this.coordinatesTabLabel.setText(l10n.getString("CoordinatesTabLabel"));
+    this.xLabel.setText(l10n.getString("XCoordinateLabel"));
+    this.yLabel.setText(l10n.getString("YCoordinateLabel"));
+
+    this.disciplineTabLabel.setText(l10n.getString("DisciplineTabLabel"));
+    this.disciplineNameLabel.setText(l10n.getString("DisciplineNameLabel"));
+    this.lectureHoursLabel.setText(l10n.getString("LectureHoursLabel"));
+    this.practiceHoursLabel.setText(l10n.getString("PracticeHoursLabel"));
+    this.labsCountLabel.setText(l10n.getString("LabsCountLabel"));
   }
 
   public LabWork getExistingLabWork() {

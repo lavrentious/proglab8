@@ -439,7 +439,10 @@ public class HomeController {
     Parent root = Main.loadFxml(loader);
 
     mainStage.setScene(new Scene(root));
-    mainStage.setTitle(L10nService.getInstance().getString("Home"));
+    L10nService l10nService = L10nService.getInstance();
+    mainStage.setTitle(l10nService.getString("Home"));
+    l10nService.getObservableLocale()
+        .addListener((observable, oldValue, newValue) -> mainStage.setTitle(l10nService.getString("Home")));
     mainStage.setResizable(true);
     mainStage.show();
   }
@@ -464,6 +467,8 @@ public class HomeController {
     this.disciplinePracticeHoursCol.setText(L10nService.getInstance().getString("DisciplinePracticeHoursCol"));
     this.minimalPointCol.setText(L10nService.getInstance().getString("MinimalPointCol"));
     this.nameCol.setText(L10nService.getInstance().getString("NameCol"));
+    this.createdAtColumn.setText(L10nService.getInstance().getString("CreatedAtCol"));
+    this.filtersButton.setText(L10nService.getInstance().getString("FiltersButton"));
 
     Platform.runLater(() -> {
       this.createdAtColumn.setCellValueFactory(

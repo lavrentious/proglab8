@@ -157,8 +157,14 @@ public class LoginController {
     FXMLLoader loginLoader = new FXMLLoader(LoginController.class.getResource("/login.fxml"));
     Parent authRoot = Main.loadFxml(loginLoader);
 
-    mainStage.setScene(new Scene(authRoot));
-    mainStage.setTitle(L10nService.getInstance().getString("Login"));
+    Scene scene = new Scene(authRoot);
+    mainStage.setScene(scene);
+
+    L10nService l10nService = L10nService.getInstance();
+    mainStage.setTitle(l10nService.getString("Login"));
+    l10nService.getObservableLocale()
+        .addListener((observable, oldValue, newValue) -> mainStage.setTitle(l10nService.getString("Login")));
+
     mainStage.setResizable(true);
     mainStage.show();
   }

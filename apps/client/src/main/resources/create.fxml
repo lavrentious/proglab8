@@ -14,10 +14,9 @@
 <?import javafx.scene.layout.RowConstraints?>
 <?import javafx.scene.layout.VBox?>
 
-
 <VBox alignment="TOP_CENTER" maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.lavrent.lab8.client.gui.controllers.LabworkDialog">
    <children>
-      <TitledPane text="general">
+      <TitledPane fx:id="generalTabLabel" text="general">
          <content>
             <GridPane>
               <columnConstraints>
@@ -52,7 +51,7 @@
             </GridPane>
          </content>
       </TitledPane>
-      <TitledPane animated="false" text="coordinates">
+      <TitledPane fx:id="coordinatesTabLabel" animated="false" text="coordinates">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0">
                <children>
@@ -84,7 +83,7 @@
             </AnchorPane>
         </content>
       </TitledPane>
-      <TitledPane animated="false" text="discipline">
+      <TitledPane fx:id="disciplineTabLabel" animated="false" text="discipline">
         <content>
           <AnchorPane minHeight="0.0" minWidth="0.0">
                <children>

@@ -10,6 +10,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.CheckBox;
 import javafx.scene.control.DatePicker;
+import javafx.scene.control.Label;
 import javafx.scene.control.Spinner;
 import javafx.scene.control.SpinnerValueFactory;
 import javafx.scene.control.TextField;
@@ -32,6 +33,9 @@ public class FiltersDialog {
   private CheckBox authorIdEnabled;
 
   @FXML
+  private Label authorIdLabel;
+
+  @FXML
   private DatePicker createdAtBegin;
 
   @FXML
@@ -41,10 +45,22 @@ public class FiltersDialog {
   private DatePicker createdAtEnd;
 
   @FXML
+  private Label createdAtEndLabel;
+
+  @FXML
+  private Label createdAtLabel;
+
+  @FXML
+  private Label createdAtStartLabel;
+
+  @FXML
   private CheckBox nameEnabled;
 
   @FXML
   private TextField nameField;
+
+  @FXML
+  private Label nameLabel;
 
   @FXML
   private Button okButton;
@@ -78,10 +94,13 @@ public class FiltersDialog {
   static void launch() {
     FXMLLoader loader = new FXMLLoader(SettingsDialog.class.getResource("/filters.fxml"));
     Parent root = Main.loadFxml(loader);
-    // SettingsDialog dialogController = loader.getController();
+
     Stage dialogStage = new Stage();
     dialogStage.setScene(new Scene(root));
-    dialogStage.setTitle(L10nService.getInstance().getString("Filters"));
+    L10nService l10nService = L10nService.getInstance();
+    dialogStage.setTitle(l10nService.getString("Filters"));
+    l10nService.getObservableLocale()
+        .addListener((observable, oldValue, newValue) -> dialogStage.setTitle(l10nService.getString("Filters")));
     dialogStage.showAndWait();
   }
 
@@ -92,6 +111,11 @@ public class FiltersDialog {
 
   @FXML
   void initialize() {
+    this.applyLocale();
+    L10nService.getInstance().getObservableLocale().addListener((observable, oldValue, newValue) -> {
+      this.applyLocale();
+    });
+
     // init checkboxes
     authorIdEnabled.selectedProperty().addListener(new ChangeListener<Boolean>() {
       @Override
@@ -151,5 +175,18 @@ public class FiltersDialog {
     this.nameEnabled.setSelected(filters.getName() != null);
     this.authorIdEnabled.setSelected(filters.getAuthorId() != null);
     this.createdAtEnabled.setSelected(filters.getCreatedAtBegin() != null || filters.getCreatedAtEnd() != null);
+  }
+
+  private void applyLocale() {
+    L10nService l10n = L10nService.getInstance();
+    this.authorIdLabel.setText(l10n.getString("AuthorIdLabel"));
+    this.createdAtLabel.setText(l10n.getString("CreatedAtLabel"));
+    this.createdAtStartLabel.setText(l10n.getString("CreatedAtStartLabel"));
+    this.createdAtEndLabel.setText(l10n.getString("CreatedAtEndLabel"));
+    this.nameLabel.setText(l10n.getString("NameLabel"));
+    this.okButton.setText(l10n.getString("OK"));
+    this.resetButton.setText(l10n.getString("Reset"));
+    this.authorId.setPromptText(l10n.getString("AuthorIdPrompt"));
+    this.nameField.setPromptText(l10n.getString("NamePrompt"));
   }
 }
