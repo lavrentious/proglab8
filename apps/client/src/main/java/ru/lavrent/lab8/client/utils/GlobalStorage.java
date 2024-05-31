@@ -13,8 +13,11 @@ import ru.lavrent.lab8.common.utils.Credentials;
 import ru.lavrent.lab8.common.utils.PublicUser;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Consumer;
 
 public class GlobalStorage {
   static private GlobalStorage instance;
@@ -99,15 +102,20 @@ public class GlobalStorage {
     });
   }
 
-  public synchronized void setLabWorks(Map<Long, LabWork> newLabworks, Runnable visualize) {
+  public ConcurrentHashMap<Long, LabWork> getLabWorks() {
+    return labWorks;
+  }
+
+  public synchronized void setLabWorks(Map<Long, LabWork> newLabworks, Consumer<Set<Long>> rerenderIds) {
     Platform.runLater(() -> {
       HashMap<Long, LabWork> oldLabWorks = new HashMap<>(this.labWorks);
-      boolean rerenderRequired = false;
+      HashSet<Long> changedIds = new HashSet<>(); // ids to rerender
+
       for (var labWork : oldLabWorks.values()) {
         if (!newLabworks.containsKey(labWork.getId())) {
           this.labWorkList.remove(this.labWorks.get(labWork.getId()));
           this.labWorks.remove(labWork.getId());
-          rerenderRequired = true;
+          changedIds.add(labWork.getId());
         }
       }
 
@@ -115,7 +123,7 @@ public class GlobalStorage {
         if (!oldLabWorks.containsKey(labWork.getId())) {
           this.labWorks.put(labWork.getId(), labWork);
           this.labWorkList.add(labWork);
-          rerenderRequired = true;
+          changedIds.add(labWork.getId());
         } else if (!oldLabWorks.get(labWork.getId()).equals(labWork)) {
           System.out.println("updating " + labWork.getId());
           this.labWorks.put(labWork.getId(), labWork);
@@ -126,11 +134,11 @@ public class GlobalStorage {
           System.out.println("old " + oldLabWork);
           System.out.println(this.labWorkList.indexOf(oldLabWork));
           this.labWorkList.set(this.labWorkList.indexOf(oldLabWork), labWork);
-          rerenderRequired = true;
+          changedIds.add(labWork.getId());
         }
       }
-      if (rerenderRequired) {
-        visualize.run();
+      if (changedIds.size() > 0) {
+        rerenderIds.accept(changedIds);
       }
     });
   }

@@ -1,5 +1,7 @@
 package ru.lavrent.lab8.client.gui.controllers;
 
+import javafx.animation.FadeTransition;
+import javafx.animation.ScaleTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleIntegerProperty;
@@ -10,6 +12,7 @@ import javafx.concurrent.ScheduledService;
 import javafx.concurrent.Task;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
+import javafx.scene.Node;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
@@ -38,20 +41,27 @@ import ru.lavrent.lab8.common.models.LabWork;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.ResourceBundle;
+import java.util.Set;
 
 public class HomeController {
   private LabWorkFetcherService labWorkFetcherService;
 
   class LabWorkFetcherService extends ScheduledService<Void> {
+    private volatile boolean firstRender = true;
+
     @Override
     protected Task<Void> createTask() {
       return new Task<Void>() {
         @Override
         protected Void call() throws Exception {
           isLoading.set(true);
-          LabWorkService.getInstance().fetch(() -> HomeController.this.visualize(false));
+          LabWorkService.getInstance()
+              .fetch(firstRender ? (Set<Long> ids) -> HomeController.this.visualize(null)
+                  : HomeController.this::visualize);
+          LabWorkFetcherService.this.firstRender = false;
           return null;
         }
       };
@@ -72,11 +82,18 @@ public class HomeController {
         System.out.println("unknown error: " + exception);
       }
     }
+
+    @Override
+    public void restart() {
+      super.restart();
+      this.firstRender = true;
+    }
   }
 
   private SimpleBooleanProperty isLoading = new SimpleBooleanProperty(false);
   private SimpleObjectProperty<LabWork> selectedLabWork = new SimpleObjectProperty<>();
   private Map<Long, Color> authorColors = new HashMap<>();
+  private Map<Long, Set<Node>> circles = new HashMap<>();
 
   @FXML
   private ProgressIndicator loadingIndicator;
@@ -180,7 +197,7 @@ public class HomeController {
     // initialize handlers
     this.visualizeTab.setOnSelectionChanged(event -> {
       if (this.visualizeTab.isSelected()) {
-        visualize(true);
+        visualize(null);
       }
     });
 
@@ -249,14 +266,39 @@ public class HomeController {
     labWorkFetcherService.start();
   }
 
-  private void visualize(boolean forceAnimate) {
-    if (!this.visualizeTab.isSelected()) {
+  /**
+   * render visualization
+   * 
+   * @param rerenderIds a set of labwork ids that need to be rerendered (null -
+   *                    rerender all; empty set - rerender none)
+   */
+  private void visualize(Set<Long> rerenderIds) {
+    if (rerenderIds == null) {
+      this.visualizePane.getChildren().clear();
+      rerenderIds = new HashSet<>();
+      for (LabWork labWork : GlobalStorage.getInstance().getObservableLabWorks()) {
+        rerenderIds.add(labWork.getId());
+      }
+    }
+    System.out.println("rerendering ids " + String.join(", ", rerenderIds.stream().map(String::valueOf).toList()));
+    if (!this.visualizeTab.isSelected() || rerenderIds.size() == 0) {
       return;
     }
     System.out.println("visualizing");
-    this.visualizePane.getChildren().clear();
+
+    // remove circles for deleted labworks
+    for (long removedId : rerenderIds.stream().filter(id -> GlobalStorage.getInstance().getLabWorkById(id) == null)
+        .toList()) {
+      for (Node node : this.circles.get(removedId)) {
+        this.visualizePane.getChildren().remove(node);
+      }
+    }
 
     for (LabWork labWork : GlobalStorage.getInstance().getObservableLabWorks()) {
+      if (!rerenderIds.contains(labWork.getId())) {
+        continue;
+      }
+      System.out.println("rerendering id=" + labWork.getId());
       if (!authorColors.containsKey(labWork.getAuthorId())) {
         authorColors.put(labWork.getAuthorId(), Color.color(Math.random(), Math.random(), Math.random()));
       }
@@ -277,13 +319,15 @@ public class HomeController {
       circle.setCenterX(x);
       circle.setCenterY(y);
       this.visualizePane.getChildren().add(circle);
+      this.circles.put(labWork.getId(), new HashSet<Node>(Arrays.asList(circle)));
 
       // id label
-      Text id = new Text("id=" + String.valueOf(labWork.getId()));
-      id.setFont(Font.font("Segoe UI", radius / 2));
-      id.setX(circle.getCenterX() - id.getLayoutBounds().getWidth() / 2);
-      id.setY(circle.getCenterY() + id.getLayoutBounds().getHeight() / 4);
-      this.visualizePane.getChildren().add(id);
+      Text idLabelNode = new Text("id=" + String.valueOf(labWork.getId()));
+      idLabelNode.setFont(Font.font("Segoe UI", radius / 2));
+      idLabelNode.setX(circle.getCenterX() - idLabelNode.getLayoutBounds().getWidth() / 2);
+      idLabelNode.setY(circle.getCenterY() + idLabelNode.getLayoutBounds().getHeight() / 4);
+      this.visualizePane.getChildren().add(idLabelNode);
+      this.circles.get(labWork.getId()).add(idLabelNode);
 
       // init events
       circle.setOnMouseClicked(mouseEvent -> {
@@ -292,13 +336,31 @@ public class HomeController {
         }
       });
 
-      Arrays.asList(circle, id).forEach((node) -> node.setOnMouseEntered(mouseEvent -> {
+      Arrays.asList(circle, idLabelNode).forEach((node) -> node.setOnMouseEntered(mouseEvent -> {
         circle.setFill(color.brighter());
       }));
 
-      Arrays.asList(circle, id).forEach(node -> node.setOnMouseExited(mouseEvent -> {
+      Arrays.asList(circle, idLabelNode).forEach(node -> node.setOnMouseExited(mouseEvent -> {
         circle.setFill(color);
       }));
+
+      // animation
+      Duration animationDuration = Duration.millis(600);
+
+      ScaleTransition scaleTransition = new ScaleTransition(animationDuration, circle);
+      scaleTransition.setFromX(0.2);
+      scaleTransition.setFromY(0.2);
+      scaleTransition.setToX(1);
+      scaleTransition.setToY(1);
+      scaleTransition.setCycleCount(1);
+
+      FadeTransition idFadeTransition = new FadeTransition(animationDuration, idLabelNode);
+      idFadeTransition.setFromValue(0.1);
+      idFadeTransition.setToValue(1.0);
+      idFadeTransition.setCycleCount(1);
+
+      scaleTransition.play();
+      idFadeTransition.play();
     }
 
     System.out.println("visualizing complete");

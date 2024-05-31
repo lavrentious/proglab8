@@ -15,6 +15,8 @@ import ru.lavrent.lab8.common.utils.Commands;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.Set;
+import java.util.function.Consumer;
 
 public class LabWorkService {
   private static LabWorkService instance;
@@ -26,7 +28,7 @@ public class LabWorkService {
     return instance;
   }
 
-  public void fetch(Runnable visualize) {
+  public void fetch(Consumer<Set<Long>> rerenderIds) {
     TCPClient tcpClient = GlobalStorage.getInstance().getTCPClient();
     Platform.runLater(() -> {
       try {
@@ -37,7 +39,7 @@ public class LabWorkService {
           fetchedMap.put(lw.getId(), lw);
         }
 
-        GlobalStorage.getInstance().setLabWorks(fetchedMap, visualize);
+        GlobalStorage.getInstance().setLabWorks(fetchedMap, rerenderIds);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
