@@ -1,6 +1,7 @@
 package ru.lavrent.lab8.client.gui.controllers;
 
 import javafx.animation.FadeTransition;
+import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -347,6 +348,7 @@ public class HomeController {
       // animation
       Duration animationDuration = Duration.millis(600);
 
+      // animate scale
       ScaleTransition scaleTransition = new ScaleTransition(animationDuration, circle);
       scaleTransition.setFromX(0.2);
       scaleTransition.setFromY(0.2);
@@ -354,13 +356,21 @@ public class HomeController {
       scaleTransition.setToY(1);
       scaleTransition.setCycleCount(1);
 
+      // animate fade
       FadeTransition idFadeTransition = new FadeTransition(animationDuration, idLabelNode);
       idFadeTransition.setFromValue(0.1);
       idFadeTransition.setToValue(1.0);
       idFadeTransition.setCycleCount(1);
 
+      // animate text rotation
+      var idRotateTransition = new RotateTransition(animationDuration, idLabelNode);
+      idRotateTransition.setFromAngle(0);
+      idRotateTransition.setToAngle(720);
+      idRotateTransition.setCycleCount(1);
+
       scaleTransition.play();
       idFadeTransition.play();
+      idRotateTransition.play();
     }
 
     System.out.println("visualizing complete");
