@@ -21,6 +21,11 @@ import javafx.scene.control.TableRow;
 import javafx.scene.control.TableView;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.paint.Color;
+import javafx.scene.shape.Circle;
+import javafx.scene.text.Font;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import ru.lavrent.lab8.client.Main;
@@ -31,6 +36,8 @@ import ru.lavrent.lab8.client.utils.L10nService;
 import ru.lavrent.lab8.common.models.LabWork;
 
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.ResourceBundle;
 
 public class HomeController {
@@ -103,6 +110,9 @@ public class HomeController {
   private Tab visualizeTab;
 
   @FXML
+  private Pane visualizePane;
+
+  @FXML
   private TableView<LabWork> dataTable;
 
   @FXML
@@ -166,6 +176,12 @@ public class HomeController {
     this.loggedUsername.setText(GlobalStorage.getInstance().getUser().getUsername());
 
     // initialize handlers
+    this.visualizeTab.setOnSelectionChanged(event -> {
+      if (this.visualizeTab.isSelected()) {
+        visualize(true);
+      }
+    });
+
     isLoading.addListener((observable, oldValue, newValue) -> {
       this.loadingIndicator.setVisible(newValue);
     });
@@ -223,6 +239,43 @@ public class HomeController {
     this.labWorkFetcherService = new LabWorkFetcherService();
     labWorkFetcherService.setPeriod(Duration.seconds(3));
     labWorkFetcherService.start();
+  }
+
+  private void visualize(boolean forceAnimate) {
+    Map<Long, Color> authorColors = new HashMap<>();
+    System.out.println("visualizing");
+    this.visualizePane.getChildren().clear();
+
+    for (LabWork labWork : GlobalStorage.getInstance().getObservableLabWorks()) {
+      if (!authorColors.containsKey(labWork.getAuthorId())) {
+        authorColors.put(labWork.getAuthorId(), Color.color(Math.random(), Math.random(), Math.random()));
+      }
+      Color color = authorColors.get(labWork.getAuthorId());
+
+      // Defining radius
+      double radius = Math.log(labWork.getDiscipline().getLabsCount() * 3) * 20;
+      radius = Math.max(15, Math.min(radius, 100));
+
+      // Defining position
+      long x = Math.abs(labWork.getCoordinates().getX());
+      x = Math.max(50, Math.min(x, 800));
+
+      long y = Math.abs(labWork.getCoordinates().getY());
+      y = Math.max(50, Math.min(y, 350));
+
+      // Circle
+      Circle circle = new Circle(radius, color);
+      circle.setCenterX(x);
+      circle.setCenterY(y);
+      this.visualizePane.getChildren().add(circle);
+
+      // Id
+      Text id = new Text("id=" + String.valueOf(labWork.getId()));
+      id.setFont(Font.font("Segoe UI", radius / 2));
+      id.setX(circle.getCenterX() - id.getLayoutBounds().getWidth() / 2);
+      id.setY(circle.getCenterY() + id.getLayoutBounds().getHeight() / 4);
+      this.visualizePane.getChildren().add(id);
+    }
   }
 
   @FXML

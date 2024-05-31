@@ -15,6 +15,7 @@
 <?import javafx.scene.layout.BorderPane?>
 <?import javafx.scene.layout.FlowPane?>
 <?import javafx.scene.layout.HBox?>
+<?import javafx.scene.layout.Pane?>
 
 <BorderPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="551.0" prefWidth="741.0" xmlns="http://javafx.com/javafx/22" xmlns:fx="http://javafx.com/fxml/1" fx:controller="ru.lavrent.lab8.client.gui.controllers.HomeController">
    <center>
@@ -77,9 +78,9 @@
             </content>
           </Tab>
           <Tab fx:id="visualizeTab" text="visualize">
-            <content>
-              <AnchorPane minHeight="0.0" minWidth="0.0" prefHeight="180.0" prefWidth="200.0" />
-            </content>
+               <content>
+                  <Pane fx:id="visualizePane" prefHeight="200.0" prefWidth="200.0" />
+               </content>
           </Tab>
         </tabs>
       </TabPane>
