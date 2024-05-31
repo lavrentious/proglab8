@@ -35,6 +35,7 @@ import ru.lavrent.lab8.client.utils.GlobalStorage;
 import ru.lavrent.lab8.client.utils.L10nService;
 import ru.lavrent.lab8.common.models.LabWork;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
@@ -50,7 +51,7 @@ public class HomeController {
         @Override
         protected Void call() throws Exception {
           isLoading.set(true);
-          LabWorkService.getInstance().fetch();
+          LabWorkService.getInstance().fetch(() -> HomeController.this.visualize(false));
           return null;
         }
       };
@@ -75,6 +76,7 @@ public class HomeController {
 
   private SimpleBooleanProperty isLoading = new SimpleBooleanProperty(false);
   private SimpleObjectProperty<LabWork> selectedLabWork = new SimpleObjectProperty<>();
+  private Map<Long, Color> authorColors = new HashMap<>();
 
   @FXML
   private ProgressIndicator loadingIndicator;
@@ -213,6 +215,12 @@ public class HomeController {
       return row;
     });
 
+    // GlobalStorage.getInstance().getObservableLabWorks().addListener((ListChangeListener<LabWork>)
+    // change -> {
+    // Platform.runLater(() -> {
+    // this.visualize(false);
+    // });
+    // });
     idCol.setCellValueFactory(e -> new SimpleLongProperty(e.getValue().getId()).asObject());
     nameCol.setCellValueFactory(e -> new SimpleStringProperty(e.getValue().getName()));
     authorIdCol.setCellValueFactory(e -> new SimpleLongProperty(e.getValue().getAuthorId()).asObject());
@@ -242,7 +250,9 @@ public class HomeController {
   }
 
   private void visualize(boolean forceAnimate) {
-    Map<Long, Color> authorColors = new HashMap<>();
+    if (!this.visualizeTab.isSelected()) {
+      return;
+    }
     System.out.println("visualizing");
     this.visualizePane.getChildren().clear();
 
@@ -252,30 +262,46 @@ public class HomeController {
       }
       Color color = authorColors.get(labWork.getAuthorId());
 
-      // Defining radius
+      // set circle radius
       double radius = Math.log(labWork.getDiscipline().getLabsCount() * 3) * 20;
       radius = Math.max(15, Math.min(radius, 100));
 
-      // Defining position
+      // set circle position
       long x = Math.abs(labWork.getCoordinates().getX());
       x = Math.max(50, Math.min(x, 800));
-
       long y = Math.abs(labWork.getCoordinates().getY());
       y = Math.max(50, Math.min(y, 350));
 
-      // Circle
+      // draw circle
       Circle circle = new Circle(radius, color);
       circle.setCenterX(x);
       circle.setCenterY(y);
       this.visualizePane.getChildren().add(circle);
 
-      // Id
+      // id label
       Text id = new Text("id=" + String.valueOf(labWork.getId()));
       id.setFont(Font.font("Segoe UI", radius / 2));
       id.setX(circle.getCenterX() - id.getLayoutBounds().getWidth() / 2);
       id.setY(circle.getCenterY() + id.getLayoutBounds().getHeight() / 4);
       this.visualizePane.getChildren().add(id);
+
+      // init events
+      circle.setOnMouseClicked(mouseEvent -> {
+        if (mouseEvent.getClickCount() == 2 && labWork.getAuthorId() == GlobalStorage.getInstance().getUser().getId()) {
+          LabworkDialog.launch(labWork);
+        }
+      });
+
+      Arrays.asList(circle, id).forEach((node) -> node.setOnMouseEntered(mouseEvent -> {
+        circle.setFill(color.brighter());
+      }));
+
+      Arrays.asList(circle, id).forEach(node -> node.setOnMouseExited(mouseEvent -> {
+        circle.setFill(color);
+      }));
     }
+
+    System.out.println("visualizing complete");
   }
 
   @FXML

@@ -26,7 +26,7 @@ public class LabWorkService {
     return instance;
   }
 
-  public void fetch() {
+  public void fetch(Runnable visualize) {
     TCPClient tcpClient = GlobalStorage.getInstance().getTCPClient();
     Platform.runLater(() -> {
       try {
@@ -37,7 +37,7 @@ public class LabWorkService {
           fetchedMap.put(lw.getId(), lw);
         }
 
-        GlobalStorage.getInstance().setLabWorks(fetchedMap);
+        GlobalStorage.getInstance().setLabWorks(fetchedMap, visualize);
       } catch (IOException e) {
         throw new RuntimeException(e);
       }

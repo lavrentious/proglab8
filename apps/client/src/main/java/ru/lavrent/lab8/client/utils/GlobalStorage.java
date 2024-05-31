@@ -3,7 +3,6 @@ package ru.lavrent.lab8.client.utils;
 import com.google.common.base.Predicate;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleListProperty;
-import javafx.beans.property.SimpleMapProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
@@ -13,7 +12,9 @@ import ru.lavrent.lab8.common.models.LabWork;
 import ru.lavrent.lab8.common.utils.Credentials;
 import ru.lavrent.lab8.common.utils.PublicUser;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class GlobalStorage {
   static private GlobalStorage instance;
@@ -21,12 +22,13 @@ public class GlobalStorage {
   private SimpleObjectProperty<PublicUser> user = new SimpleObjectProperty<>();
   private Stage mainStage;
   private TCPClient tcpClient;
-  private SimpleMapProperty<Long, LabWork> labWorks = new SimpleMapProperty<>(FXCollections.observableHashMap());
+  private ConcurrentHashMap<Long, LabWork> labWorks;
   private ObservableList<LabWork> labWorkList;
   private FilteredList<LabWork> filteredList;
 
   private GlobalStorage() {
-    this.labWorkList = new SimpleListProperty<>(FXCollections.observableArrayList(this.labWorks.get().values()));
+    this.labWorks = new ConcurrentHashMap<>();
+    this.labWorkList = new SimpleListProperty<>(FXCollections.observableArrayList(this.labWorks.values()));
     this.filteredList = new FilteredList<>(this.labWorkList);
   }
 
@@ -51,10 +53,6 @@ public class GlobalStorage {
 
   public synchronized Credentials getCredentials() {
     return credentials.get();
-  }
-
-  public SimpleMapProperty<Long, LabWork> getLabWorks() {
-    return labWorks;
   }
 
   public synchronized void clearLabWorks() {
@@ -101,12 +99,39 @@ public class GlobalStorage {
     });
   }
 
-  public synchronized void setLabWorks(Map<Long, LabWork> newLabworks) {
+  public synchronized void setLabWorks(Map<Long, LabWork> newLabworks, Runnable visualize) {
     Platform.runLater(() -> {
-      this.labWorks.clear();
-      this.labWorks.putAll(newLabworks);
-      this.labWorkList.clear();
-      this.labWorkList.addAll(newLabworks.values());
+      HashMap<Long, LabWork> oldLabWorks = new HashMap<>(this.labWorks);
+      boolean rerenderRequired = false;
+      for (var labWork : oldLabWorks.values()) {
+        if (!newLabworks.containsKey(labWork.getId())) {
+          this.labWorkList.remove(this.labWorks.get(labWork.getId()));
+          this.labWorks.remove(labWork.getId());
+          rerenderRequired = true;
+        }
+      }
+
+      for (var labWork : newLabworks.values()) {
+        if (!oldLabWorks.containsKey(labWork.getId())) {
+          this.labWorks.put(labWork.getId(), labWork);
+          this.labWorkList.add(labWork);
+          rerenderRequired = true;
+        } else if (!oldLabWorks.get(labWork.getId()).equals(labWork)) {
+          System.out.println("updating " + labWork.getId());
+          this.labWorks.put(labWork.getId(), labWork);
+          // this.labWorkList.remove(this.labWorks.get(labWork.getId()));
+          // this.filteredList.remove(this.labWorks.get(labWork.getId()));
+          // this.labWorkList.add(labWork);
+          var oldLabWork = this.labWorkList.stream().filter(lw -> lw.getId() == labWork.getId()).findFirst().get();
+          System.out.println("old " + oldLabWork);
+          System.out.println(this.labWorkList.indexOf(oldLabWork));
+          this.labWorkList.set(this.labWorkList.indexOf(oldLabWork), labWork);
+          rerenderRequired = true;
+        }
+      }
+      if (rerenderRequired) {
+        visualize.run();
+      }
     });
   }
 

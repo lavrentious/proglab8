@@ -67,6 +67,15 @@ public class LabWork extends DryLabWork implements Comparable<LabWork> {
     return authorId;
   }
 
+  public void setDryLabwork(LabWork newLabWork) {
+    this.name = newLabWork.name;
+    this.coordinates = newLabWork.coordinates;
+    this.minimalPoint = newLabWork.minimalPoint;
+    this.difficulty = newLabWork.difficulty;
+    this.creationDate = newLabWork.creationDate;
+    this.discipline = newLabWork.discipline;
+  }
+
   @Override
   public int compareTo(LabWork o) {
     return Long.compare(getId(), o.getId()); // FIXME: what do i compare by??
