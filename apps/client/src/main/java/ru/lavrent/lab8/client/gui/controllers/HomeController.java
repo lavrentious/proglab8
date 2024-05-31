@@ -290,8 +290,18 @@ public class HomeController {
     // remove circles for deleted labworks
     for (long removedId : rerenderIds.stream().filter(id -> GlobalStorage.getInstance().getLabWorkById(id) == null)
         .toList()) {
+      var root = this.visualizePane;
       for (Node node : this.circles.get(removedId)) {
-        this.visualizePane.getChildren().remove(node);
+        // this.visualizePane.getChildren().remove(node);
+        FadeTransition fadeOutTransition = new FadeTransition(Duration.millis(1000), node);
+        fadeOutTransition.setFromValue(1.0);
+        fadeOutTransition.setToValue(0.0);
+        fadeOutTransition.setCycleCount(1);
+        fadeOutTransition.setAutoReverse(false);
+
+        fadeOutTransition.setOnFinished(event -> root.getChildren().remove(node));
+
+        fadeOutTransition.play();
       }
     }
 
@@ -346,7 +356,7 @@ public class HomeController {
       }));
 
       // animation
-      Duration animationDuration = Duration.millis(600);
+      Duration animationDuration = Duration.millis(1000);
 
       // animate scale
       ScaleTransition scaleTransition = new ScaleTransition(animationDuration, circle);
